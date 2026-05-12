@@ -766,34 +766,12 @@ export async function runSetupWizard(
   // Plugin configuration (sandbox backends, tool plugins, etc.)
   if (flow !== "quickstart") {
     const { setupOfficialPluginInstalls } = await import("./setup.official-plugins.js");
-    const officialInstalls = await setupOfficialPluginInstalls({
+    nextConfig = await setupOfficialPluginInstalls({
       config: nextConfig,
       prompter,
       runtime,
       workspaceDir,
     });
-    nextConfig = officialInstalls.config;
-    if (officialInstalls.installedPluginIds.length > 0) {
-      // Flush the install records before offering migration so any provider
-      // launched via `migrateDefaultCommand` reads the just-installed plugin
-      // state from disk. Re-read the snapshot afterwards because migration
-      // apply mutates the on-disk config out of band.
-      nextConfig = await writeWizardConfigFile(nextConfig);
-      const { offerPostInstallMigrations } = await import("./setup.post-install-migration.js");
-      await offerPostInstallMigrations({
-        config: nextConfig,
-        runtime,
-        prompter,
-        installedPluginIds: officialInstalls.installedPluginIds,
-        nonInteractive: opts.nonInteractive === true,
-      });
-      const refreshed = await readSetupConfigFileSnapshot();
-      nextConfig = refreshed.valid
-        ? refreshed.exists
-          ? (refreshed.sourceConfig ?? refreshed.config)
-          : nextConfig
-        : nextConfig;
-    }
     const { setupPluginConfig } = await import("./setup.plugin-config.js");
     nextConfig = await setupPluginConfig({
       config: nextConfig,

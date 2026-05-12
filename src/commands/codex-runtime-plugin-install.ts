@@ -32,11 +32,6 @@ export type CodexRuntimePluginInstallResult = {
   // Codex plugin id, always populated so callers can route post-install
   // follow-ups (migration offers, etc.) without re-deriving the id.
   pluginId: string;
-  // True only when this call newly transitioned the plugin from absent to
-  // installed. Repair paths against an already-installed plugin return false
-  // so post-install hooks (e.g. the Codex CLI migration prompt) don't fire on
-  // every wizard run after the harness is in place.
-  freshlyInstalled: boolean;
 };
 
 export function selectedModelShouldEnsureCodexRuntimePlugin(params: {
@@ -62,7 +57,6 @@ export async function ensureCodexRuntimePluginForModelSelection(params: {
       required: false,
       installed: false,
       pluginId: CODEX_RUNTIME_PLUGIN_ID,
-      freshlyInstalled: false,
     };
   }
   const existingRecords = await loadInstalledPluginIndexInstallRecords({ env: process.env });
@@ -85,7 +79,6 @@ export async function ensureCodexRuntimePluginForModelSelection(params: {
       installed: true,
       status: "installed",
       pluginId: CODEX_RUNTIME_PLUGIN_ID,
-      freshlyInstalled: false,
     };
   }
   const { ensureOnboardingPluginInstalled } = await import("./onboarding-plugin-install.js");
@@ -113,7 +106,6 @@ export async function ensureCodexRuntimePluginForModelSelection(params: {
     installed: result.installed,
     status: result.status,
     pluginId: CODEX_RUNTIME_PLUGIN_ID,
-    freshlyInstalled: result.installed,
   };
 }
 

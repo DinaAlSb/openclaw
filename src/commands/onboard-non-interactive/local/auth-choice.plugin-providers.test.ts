@@ -10,7 +10,6 @@ const ensureCodexRuntimePluginForModelSelection = vi.hoisted(() =>
       required: false,
       installed: false,
       pluginId: "codex",
-      freshlyInstalled: false,
     }),
   ),
 );
@@ -53,7 +52,6 @@ beforeEach(() => {
     required: false,
     installed: false,
     pluginId: "codex",
-    freshlyInstalled: false,
   }));
   offerPostInstallMigrations.mockClear();
 });
@@ -256,7 +254,6 @@ describe("applyNonInteractivePluginProviderChoice", () => {
       installed: true,
       status: "installed",
       pluginId: "codex",
-      freshlyInstalled: true,
     });
     resolvePluginProviders.mockReturnValue([{ id: "openai", pluginId: "openai" }] as never);
     resolveProviderPluginChoice.mockReturnValue({
@@ -288,7 +285,7 @@ describe("applyNonInteractivePluginProviderChoice", () => {
     expect(migrationInput.nonInteractive).toBe(true);
   });
 
-  it("does not offer post-install migration when Codex was not freshly installed", async () => {
+  it("does not offer post-install migration when Codex is not required for the selected model", async () => {
     const runtime = createRuntime();
     const selectedConfig = {
       agents: { defaults: { model: { primary: "openai/gpt-5.5" } } },
@@ -299,7 +296,6 @@ describe("applyNonInteractivePluginProviderChoice", () => {
       required: false,
       installed: false,
       pluginId: "codex",
-      freshlyInstalled: false,
     });
     resolvePluginProviders.mockReturnValue([{ id: "openai", pluginId: "openai" }] as never);
     resolveProviderPluginChoice.mockReturnValue({

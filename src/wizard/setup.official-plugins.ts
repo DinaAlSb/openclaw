@@ -83,24 +83,17 @@ export function resolveOfficialPluginOnboardingInstallEntries(params: {
   return entries.toSorted((left, right) => left.label.localeCompare(right.label));
 }
 
-export type SetupOfficialPluginInstallsResult = {
-  config: OpenClawConfig;
-  // Plugin ids that newly transitioned to installed during this wizard step.
-  // Already-installed or skipped/failed entries are not included.
-  installedPluginIds: readonly string[];
-};
-
 export async function setupOfficialPluginInstalls(params: {
   config: OpenClawConfig;
   prompter: WizardPrompter;
   runtime: RuntimeEnv;
   workspaceDir?: string;
-}): Promise<SetupOfficialPluginInstallsResult> {
+}): Promise<OpenClawConfig> {
   const installEntries = resolveOfficialPluginOnboardingInstallEntries({
     config: params.config,
   });
   if (installEntries.length === 0) {
-    return { config: params.config, installedPluginIds: [] };
+    return params.config;
   }
 
   const selected = await params.prompter.multiselect({
@@ -120,7 +113,6 @@ export async function setupOfficialPluginInstalls(params: {
   });
 
   let next = params.config;
-  const installedPluginIds: string[] = [];
   for (const pluginId of selected.filter((value) => value !== SKIP_VALUE)) {
     const entry = installEntries.find((candidate) => candidate.pluginId === pluginId);
     if (!entry) {
@@ -135,9 +127,6 @@ export async function setupOfficialPluginInstalls(params: {
       promptInstall: false,
     });
     next = result.cfg;
-    if (result.status === "installed") {
-      installedPluginIds.push(result.pluginId);
-    }
   }
-  return { config: next, installedPluginIds };
+  return next;
 }

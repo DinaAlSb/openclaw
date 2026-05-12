@@ -164,11 +164,12 @@ async function applyDefaultModelFromAuthChoice(params: {
     });
     nextConfig = codexInstall.cfg;
     await params.runSelectedModelHook(nextConfig);
-    if (codexInstall.freshlyInstalled) {
-      // Offer Codex CLI state migration immediately after the harness lands so
-      // the prompt is anchored to the install event the user just confirmed.
-      // Gated on freshlyInstalled (not installed) so repair runs against an
-      // already-present harness don't re-prompt every wizard pass.
+    if (codexInstall.installed) {
+      // Offer Codex CLI state migration whenever the harness is in place for
+      // the selected model, regardless of whether this run was a fresh install
+      // or a repair against an already-present harness. The user can always
+      // decline the prompt; surfacing it again costs nothing if there is no
+      // migratable state to find.
       const { offerPostInstallMigrations } =
         await import("../wizard/setup.post-install-migration.js");
       await offerPostInstallMigrations({

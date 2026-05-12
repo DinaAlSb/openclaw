@@ -209,10 +209,11 @@ export async function applyNonInteractivePluginProviderChoice(params: {
     runtime: params.runtime,
     workspaceDir,
   });
-  if (codexInstall.freshlyInstalled) {
+  if (codexInstall.installed) {
     // Non-interactive onboarding never auto-applies migration; emit a hint so
     // the operator knows Codex CLI state is available to import deliberately.
-    // Gated on freshlyInstalled so repair runs don't echo the hint each time.
+    // Gated on installed (not freshlyInstalled) so repair runs against an
+    // already-present harness still surface the hint.
     const { offerPostInstallMigrations } =
       await import("../../../wizard/setup.post-install-migration.js");
     await offerPostInstallMigrations({
