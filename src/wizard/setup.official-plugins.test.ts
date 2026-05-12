@@ -4,9 +4,10 @@ import { createNonExitingRuntime } from "../runtime.js";
 import type { WizardPrompter } from "./prompts.js";
 
 const ensureOnboardingPluginInstalled = vi.hoisted(() =>
-  vi.fn(async ({ cfg }: { cfg: Record<string, unknown> }) => ({
+  vi.fn(async ({ cfg, entry }: { cfg: Record<string, unknown>; entry: { pluginId: string } }) => ({
     cfg,
     installed: true,
+    pluginId: entry.pluginId,
     status: "installed",
   })),
 );
@@ -83,9 +84,10 @@ describe("formatInstallHint", () => {
 describe("setupOfficialPluginInstalls", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    ensureOnboardingPluginInstalled.mockImplementation(async ({ cfg }) => ({
+    ensureOnboardingPluginInstalled.mockImplementation(async ({ cfg, entry }) => ({
       cfg,
       installed: true,
+      pluginId: entry.pluginId,
       status: "installed",
     }));
   });
@@ -97,7 +99,7 @@ describe("setupOfficialPluginInstalls", () => {
     });
     const runtime = createNonExitingRuntime();
 
-    await setupOfficialPluginInstalls({
+    const result = await setupOfficialPluginInstalls({
       config: {},
       prompter,
       runtime,
@@ -173,6 +175,28 @@ describe("setupOfficialPluginInstalls", () => {
       workspaceDir: "/tmp/workspace",
       promptInstall: false,
     });
+    expect(result.installedPluginIds).toEqual(["diagnostics-otel"]);
+  });
+
+  it("omits plugins whose install was skipped from the installedPluginIds report", async () => {
+    ensureOnboardingPluginInstalled.mockImplementation(async ({ cfg, entry }) => ({
+      cfg,
+      installed: false,
+      pluginId: entry.pluginId,
+      status: "skipped",
+    }));
+    const multiselect = vi.fn(async () => ["diagnostics-otel"]);
+    const prompter = createWizardPrompter({
+      multiselect: multiselect as WizardPrompter["multiselect"],
+    });
+
+    const result = await setupOfficialPluginInstalls({
+      config: {},
+      prompter,
+      runtime: createNonExitingRuntime(),
+    });
+
+    expect(result.installedPluginIds).toEqual([]);
   });
 
   it("does not install when the user skips optional plugins", async () => {
@@ -180,12 +204,13 @@ describe("setupOfficialPluginInstalls", () => {
       multiselect: vi.fn(async () => ["__skip__"]) as WizardPrompter["multiselect"],
     });
 
-    await setupOfficialPluginInstalls({
+    const result = await setupOfficialPluginInstalls({
       config: {},
       prompter,
       runtime: createNonExitingRuntime(),
     });
 
     expect(ensureOnboardingPluginInstalled).not.toHaveBeenCalled();
+    expect(result.installedPluginIds).toEqual([]);
   });
 });

@@ -201,13 +201,27 @@ export async function applyNonInteractivePluginProviderChoice(params: {
   if (!selectedModel) {
     return result;
   }
-  return (
-    await ensureCodexRuntimePluginForModelSelection({
-      cfg: result,
-      model: selectedModel,
-      prompter: createNonInteractivePluginInstallPrompter(params.runtime),
+  const nonInteractivePrompter = createNonInteractivePluginInstallPrompter(params.runtime);
+  const codexInstall = await ensureCodexRuntimePluginForModelSelection({
+    cfg: result,
+    model: selectedModel,
+    prompter: nonInteractivePrompter,
+    runtime: params.runtime,
+    workspaceDir,
+  });
+  if (codexInstall.freshlyInstalled) {
+    // Non-interactive onboarding never auto-applies migration; emit a hint so
+    // the operator knows Codex CLI state is available to import deliberately.
+    // Gated on freshlyInstalled so repair runs don't echo the hint each time.
+    const { offerPostInstallMigrations } =
+      await import("../../../wizard/setup.post-install-migration.js");
+    await offerPostInstallMigrations({
+      config: codexInstall.cfg,
       runtime: params.runtime,
-      workspaceDir,
-    })
-  ).cfg;
+      prompter: nonInteractivePrompter,
+      installedPluginIds: [codexInstall.pluginId],
+      nonInteractive: true,
+    });
+  }
+  return codexInstall.cfg;
 }
